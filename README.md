@@ -2,7 +2,7 @@
 
 ## Funções
 
-* Vendas e Compras de Brigadeiro
+* Vendas de Brigadeiro
 
 * Gerenciar o estoque de ingredientes.
 
