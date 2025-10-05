@@ -1,0 +1,6 @@
+*.db
+
+*.toml
+
+__pycache__
+*.lock
