@@ -1,0 +1,6 @@
+.python-version
+*.toml
+*.lock
+
+__pycache__
+*.db
