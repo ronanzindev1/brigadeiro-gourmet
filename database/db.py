@@ -3,10 +3,13 @@ from pathlib import Path
 import json
 
 DB_PATH = "brigadeiro.db"
-JSON_PATH = "brigadeiro-gourmet\database\estoque.json"
-
+JSON_PATH = "./database/estoque.json"
+def dict_factory(cursor, row):
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d
 def popular_banco():
-    print("Entrou em popular banco")
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
 
@@ -26,17 +29,16 @@ def popular_banco():
             cliente TEXT NOT NULL,
             status VARCHAR NOT NULL,
             data_pedido TEXT DEFAULT CURRENT_TIMESTAMP,
+            quantidade REAL NOT NULL,
             total REAL,
-            sabor TEXT
+            sabor TEXT,
+            recusado_por TEXT
         )
         """)
 
         if Path(JSON_PATH).exists():
-            print("qualquercoisa")
-            
             with open(JSON_PATH, "r", encoding="utf-8") as f:
                 estoque_data = json.load(f)
-
             for item in estoque_data:
                 cursor.execute("""
                     INSERT OR IGNORE INTO estoque (id, sabor, quantidade, preco_unitario, ingredientes)
@@ -55,14 +57,27 @@ def popular_banco():
 def salvar_pedido(pedido):
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO pedidos (cliente, status, total, sabor) VALUES (?, ?, ?, ?)", (pedido["cliente"], "pendente", pedido["total"], pedido["sabor"]))
+        cursor.execute("INSERT INTO pedidos (cliente, status, quantidade, total, sabor) VALUES (?, ?, ?, ?, ?)", (pedido["cliente"], "pendente", pedido["quantidade"], 0, pedido["sabor"]))
         conn.commit()
         id = cursor.lastrowid
+        cursor.row_factory = dict_factory
         pedido = cursor.execute("SELECT * FROM pedidos WHERE id = ?", (id,)).fetchone()
-        return 
-    
-    
-    
+        return pedido
+
+def buscar_pedido(id):
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.row_factory = dict_factory
+        pedido = cursor.execute("SELECT * FROM pedidos WHERE id = ?", (id,)).fetchone()
+        return pedido
+
+def buscar_cardapio():
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = dict_factory
+        cursor = conn.cursor()
+        cardapio = cursor.execute("SELECT sabor, preco_unitario, quantidade FROM estoque where quantidade > 0").fetchall()
+        conn.commit()
+    return cardapio
 def ver_pedidos():
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
@@ -78,9 +93,9 @@ def ver_estoque():
         estoque = cursor.execute("SELECT * FROM estoque").fetchall()
         conn.commit()
     return [dict(p) for p in estoque]
-        
-    
-      
+
+
+
 def pedido_dict(pedido):
     if pedido is None:
         return None
@@ -89,8 +104,8 @@ def pedido_dict(pedido):
         "cliente": pedido[1],
         "status": pedido[2]
     }
-    
-    
+
+
 
 def verifica_estoque(sabor):
     with sqlite3.connect(DB_PATH) as conn:
@@ -98,23 +113,28 @@ def verifica_estoque(sabor):
         cursor.execute("SELECT quantidade, preco_unitario FROM estoque WHERE sabor = ?", (sabor,))
         resultado = cursor.fetchone()
     return resultado
-        
-        
+
+
 def atualiza_estoque(sabor, qtd_restante):
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute("UPDATE estoque SET quantidade = ? WHERE sabor = ?", (qtd_restante, sabor))
         conn.commit()
 
+def atualizar_pedido(id, status, total=None, recusado_por=None):
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE pedidos SET status = ?, total = ?, recusado_por = ? WHERE id = ?", (status, total, recusado_por, id))
+        conn.commit()
 
 def limpa_tabela_pedidos():
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
-        
+
         # Apaga todos os registros da tabela
         cursor.execute("DELETE FROM pedidos")
-        
+
         # Reseta o contador de autoincremento (opcional)
         cursor.execute("DELETE FROM sqlite_sequence WHERE name='pedidos'")
-        
+
         conn.commit()
