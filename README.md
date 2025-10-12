@@ -26,9 +26,16 @@ Além disso, foram utilizadas **rotas de API REST** e **notificações via SNS**
 ### Buscar Pedido (GET)
 - Lista os pedidos em aberto, mostrando a ordem de atendimento.
 
-### Cancelar Pedido (DELETE)
-- Remove um pedido específico da fila.
-
 ### Notificações (SNS)
 - Simula o envio de e-mails para informar:
   - Confirmação de pedido
+
+## Encerramento
+
+Esse foi o nosso projeto de sistema de vendas de brigadeiro gourmet.
+É um exemplo simples, mas que mostra como a programação pode ajudar em negócios reais.
+
+### Autores
+
+Cárita Dias Martins
+Gabriel Ronan
